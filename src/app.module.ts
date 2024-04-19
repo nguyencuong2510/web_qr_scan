@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { StampModule } from './modules/stamp/stamp.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { GameModule } from './modules/game/game.module';
+import { MainModule } from './modules/main/main.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { GameModule } from './modules/game/game.module';
     StampModule,
     CustomerModule,
     GameModule,
+    MainModule,
   ],
   controllers: [],
   providers: [],

@@ -14,7 +14,7 @@ import {
   UpdateGameProgramDto,
   UpdateProgramPrizeDto,
 } from './dtos';
-import { ApiError } from 'src/common/classes';
+import { ApiError } from '../../common/classes';
 
 @Injectable()
 export class GameService {

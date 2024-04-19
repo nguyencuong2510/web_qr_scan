@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiError } from 'src/common/classes';
-import { User } from 'src/database/models';
+import { ApiError } from '../../common/classes';
+import { User } from '../../database/models';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './dtos/login.dto';

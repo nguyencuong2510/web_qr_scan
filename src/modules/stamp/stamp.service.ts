@@ -10,7 +10,7 @@ import {
   StampGroup,
 } from '../../database/models';
 import { Brackets, EntityManager, ILike, Repository } from 'typeorm';
-import { ApiError } from 'src/common/classes';
+import { ApiError } from '../../common/classes';
 import {
   AssignStampToProductDto,
   CreateStampGroupDto,
@@ -18,7 +18,7 @@ import {
   SubmitPrivateCodeDto,
   UpdateStampGroupDto,
 } from './dtos';
-import { CommonService } from 'src/common/services';
+import { CommonService } from '../../common/services';
 
 @Injectable()
 export class StampService {
