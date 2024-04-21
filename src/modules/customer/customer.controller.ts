@@ -11,7 +11,7 @@ import { CustomerService } from './customer.service';
 import { ApiResult } from '../../common/classes';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { GetCustomerList } from './dtos';
+import { GetCustomerList, GetGameHistoryListDto } from './dtos';
 
 @Controller('admin/customer')
 @ApiTags('customer')
@@ -29,8 +29,11 @@ export class CustomerController {
 
   @Get(':id')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async getCustomerDetail(@Param('id') id: string) {
-    const result = await this.customerService.getCustomerDetail(id);
+  async getCustomerDetail(
+    @Param('id') id: string,
+    @Query() data: GetGameHistoryListDto,
+  ) {
+    const result = await this.customerService.getCustomerDetail(id, data);
     return new ApiResult().success(result);
   }
 }

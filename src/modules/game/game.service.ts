@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 import {
+  GameHistory,
   GamePrize,
   GameProgram,
   Stamp,
@@ -14,6 +15,7 @@ import {
   ListProgramDto,
   UpdateGameProgramDto,
   UpdateProgramPrizeDto,
+  UpdateReceiveStatusDto,
 } from './dtos';
 import { ApiError } from '../../common/classes';
 
@@ -25,6 +27,9 @@ export class GameService {
 
     @InjectRepository(GamePrize)
     private readonly gamePrizeRepo: Repository<GamePrize>,
+
+    @InjectRepository(GameHistory)
+    private readonly gameHistoryRepo: Repository<GameHistory>,
 
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
@@ -71,6 +76,11 @@ export class GameService {
 
   async createGameProgram(data: CreateGameProgramDto) {
     return await this.gameProgramRepo.save(data);
+  }
+
+  async stopProgram(id: string) {
+    await this.gameProgramRepo.update({ id }, { endTime: new Date() });
+    return true;
   }
 
   async updateGameProgram(id: string, data: UpdateGameProgramDto) {
@@ -206,5 +216,29 @@ export class GameService {
 
       return true;
     });
+  }
+
+  async playGame(stampId: string) {
+    const gameHistory = await this.gameHistoryRepo.findOneBy({ stampId });
+    if (!gameHistory) throw new ApiError('Invalid private code');
+
+    await this.gameHistoryRepo.update(
+      { id: gameHistory.id },
+      { isPlayed: true },
+    );
+
+    return true;
+  }
+
+  async updateReceiveStatus(id: string, data: UpdateReceiveStatusDto) {
+    const gameHistory = await this.gameHistoryRepo.findOneBy({ id });
+    if (!gameHistory) throw new ApiError('Game history not found');
+
+    await this.gameHistoryRepo.update(
+      { id: gameHistory.id },
+      { status: data.status },
+    );
+
+    return true;
   }
 }

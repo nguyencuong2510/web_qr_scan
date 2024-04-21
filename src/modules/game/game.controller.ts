@@ -18,6 +18,7 @@ import {
   ListProgramDto,
   UpdateGameProgramDto,
   UpdateProgramPrizeDto,
+  UpdateReceiveStatusDto,
 } from './dtos';
 import { ApiResult } from '../../common/classes';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -68,6 +69,13 @@ export class GameController {
     return new ApiResult().success(result);
   }
 
+  @Put('program/stop/:id')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async stopProgram(@Param('id') id: string) {
+    const result = await this.gameService.stopProgram(id);
+    return new ApiResult().success(result);
+  }
+
   @Put('prize/:id')
   @UsePipes(new ValidationPipe({ transform: true }))
   async updateGameProgramPrize(
@@ -92,6 +100,26 @@ export class GameController {
     @Param('id') id: string,
   ) {
     const result = await this.gameService.assignPrizeToStamp(id, data);
+    return new ApiResult().success(result);
+  }
+
+  @Get('play/:privateCode')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async play(@Param('privateCode') privateCode: string) {
+    const result = await this.gameService.playGame(privateCode);
+    return new ApiResult().success(result);
+  }
+
+  @Put('receive-status/:gameHistoryId')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async updateReceiveStatus(
+    @Body() data: UpdateReceiveStatusDto,
+    @Param('gameHistoryId') gameHistoryId: string,
+  ) {
+    const result = await this.gameService.updateReceiveStatus(
+      gameHistoryId,
+      data,
+    );
     return new ApiResult().success(result);
   }
 }

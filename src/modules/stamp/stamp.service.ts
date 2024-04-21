@@ -9,7 +9,7 @@ import {
   Stamp,
   StampGroup,
 } from '../../database/models';
-import { Brackets, EntityManager, ILike, Repository } from 'typeorm';
+import { Brackets, EntityManager, ILike, IsNull, Repository } from 'typeorm';
 import { ApiError } from '../../common/classes';
 import {
   AssignStampToProductDto,
@@ -151,7 +151,7 @@ export class StampService {
         transaction.findOneBy(StampGroup, {
           id: stampGroupId,
         }),
-        transaction.findOneBy(Product, { id: productId }),
+        transaction.findOneBy(Product, { id: productId, deletedAt: IsNull() }),
       ]);
 
       if (!existStampGrp) throw new ApiError('Stamp group not exist');

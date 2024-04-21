@@ -7,6 +7,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export enum GameStatusEnum {
+  'IN_PROGRESS' = 'IN_PROGRESS',
+  'SENT' = 'SENT',
+  'RECEIVED' = 'RECEIVED',
+}
+
 @Entity({ name: 'game_history' })
 export class GameHistory {
   @PrimaryGeneratedColumn('uuid')
@@ -40,4 +46,20 @@ export class GameHistory {
 
   @Column({ nullable: true, name: 'time_received_prize', type: 'timestamp' })
   timeReceivedPrize: Date;
+
+  @Column({
+    nullable: false,
+    name: 'status',
+    type: 'enum',
+    enum: GameStatusEnum,
+  })
+  status: string;
+
+  @Column({
+    nullable: false,
+    name: 'is_played',
+    type: 'bool',
+    default: false,
+  })
+  isPlayed: boolean;
 }

@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Customer, Stamp, StampGroup } from '../../database/models';
-import { Repository } from 'typeorm';
+import {
+  Customer,
+  GameProgram,
+  Stamp,
+  StampGroup,
+} from '../../database/models';
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 
 @Injectable()
 export class MainService {
@@ -12,6 +17,8 @@ export class MainService {
     private readonly stampRepo: Repository<Stamp>,
     @InjectRepository(Customer)
     private readonly customerRepo: Repository<Customer>,
+    @InjectRepository(GameProgram)
+    private readonly gameProgramRepo: Repository<GameProgram>,
   ) {}
 
   async getMain() {
@@ -19,10 +26,17 @@ export class MainService {
     const noStamps = await this.stampRepo.count();
     const noStampGroups = await this.stampGroupRepo.count();
 
+    const currentDate = new Date();
+    const activeProgram = await this.gameProgramRepo.countBy({
+      startTime: LessThanOrEqual(currentDate),
+      endTime: MoreThanOrEqual(currentDate),
+    });
+
     return {
       numberOfStampGroup: noStampGroups,
       numberOfStamp: noStamps,
       numberOfCustomer: noCustomers,
+      activeProgram,
     };
   }
 }

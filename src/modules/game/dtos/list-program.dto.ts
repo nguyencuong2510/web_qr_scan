@@ -1,3 +1,3 @@
-import { BasePaginationDto } from 'src/common/classes';
+import { BasePaginationDto } from '../../../common/classes';
 
 export class ListProgramDto extends BasePaginationDto {}

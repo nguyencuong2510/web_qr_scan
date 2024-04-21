@@ -7,7 +7,7 @@ import {
   GameProgram,
 } from '../../database/models';
 import { Brackets, Repository } from 'typeorm';
-import { GetCustomerList } from './dtos';
+import { GetCustomerList, GetGameHistoryListDto } from './dtos';
 
 @Injectable()
 export class CustomerService {
@@ -59,7 +59,11 @@ export class CustomerService {
     };
   }
 
-  async getCustomerDetail(customerId: string) {
+  async getCustomerDetail(customerId: string, data: GetGameHistoryListDto) {
+    const { limit, page } = data;
+
+    const skip = (page - 1) * limit;
+
     const customer = await this.customerRepo.findOneBy({ id: customerId });
 
     const history = (await this.gameHistoryRepo
@@ -77,6 +81,8 @@ export class CustomerService {
         'prg',
         'prg.id = gpr."game_program_id"',
       )
+      .limit(limit)
+      .skip(skip)
       .getMany()) as (GameHistory & {
       program: GameProgram;
       prize?: GamePrize;
@@ -87,8 +93,11 @@ export class CustomerService {
       history: history.map((v) => ({
         name: v?.prize?.name || 'Chúc bạn may mắn lần sau',
         program: v?.program?.name || '',
-        isReceived: v.timeReceivedPrize ? true : false,
+        status: v.status,
+        isPlayed: v.isPlayed,
         timeReceivedPrize: v.timeReceivedPrize,
+        updatedAt: v.updatedAt,
+        createdAt: v.createdAt,
       })),
     };
   }
