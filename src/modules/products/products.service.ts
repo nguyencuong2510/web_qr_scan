@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from '../../database/models';
-import { ILike, Repository } from 'typeorm';
+import { ILike, IsNull, Repository } from 'typeorm';
 import { CreateProductDto, GetListProductDto, UpdateProductDto } from './dtos';
 import { ApiError } from '../../common/classes';
 
@@ -49,7 +49,10 @@ export class ProductsService {
   }
 
   async update(id: number, data: UpdateProductDto) {
-    const product = await this.productRepo.findOneBy({ id });
+    const product = await this.productRepo.findOneBy({
+      id,
+      deletedAt: IsNull(),
+    });
     if (!product) {
       throw new ApiError('Product not found');
     }
@@ -65,6 +68,9 @@ export class ProductsService {
     if (!product) {
       throw new ApiError('Product not found');
     }
-    return await this.productRepo.delete({ id: product.id });
+    return await this.productRepo.update(
+      { id: product.id },
+      { deletedAt: new Date() },
+    );
   }
 }

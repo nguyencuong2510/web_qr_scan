@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   Entity,
   Column,
@@ -40,4 +41,12 @@ export class GamePrize {
 
   @Column({ nullable: false, name: 'game_program_id' })
   gameProgramId: string;
+
+  @Column({
+    nullable: true,
+    type: 'timestamp',
+    name: 'deleted_at',
+  })
+  @ApiProperty()
+  deletedAt: Date;
 }

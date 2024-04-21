@@ -29,7 +29,7 @@ export class GameHistory {
   })
   updatedAt: Date;
 
-  @Column({ nullable: false, name: 'game_prize_id' })
+  @Column({ nullable: true, name: 'game_prize_id' })
   gamePrizeId: string;
 
   @Column({ nullable: false, name: 'customer_id' })

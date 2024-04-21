@@ -156,4 +156,12 @@ export class Product extends BaseEntity {
   })
   @ApiProperty()
   lazadaLink: string;
+
+  @Column({
+    nullable: true,
+    type: 'timestamp',
+    name: 'deleted_at',
+  })
+  @ApiProperty()
+  deletedAt: Date;
 }

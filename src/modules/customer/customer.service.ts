@@ -79,14 +79,14 @@ export class CustomerService {
       )
       .getMany()) as (GameHistory & {
       program: GameProgram;
-      prize: GamePrize;
+      prize?: GamePrize;
     })[];
 
     return {
       customer,
       history: history.map((v) => ({
-        name: v.prize.name,
-        program: v.program.name,
+        name: v?.prize?.name || 'Chúc bạn may mắn lần sau',
+        program: v?.program?.name || '',
         isReceived: v.timeReceivedPrize ? true : false,
         timeReceivedPrize: v.timeReceivedPrize,
       })),

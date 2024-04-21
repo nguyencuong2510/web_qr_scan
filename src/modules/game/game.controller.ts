@@ -7,12 +7,15 @@ import {
   Put,
   Param,
   UseGuards,
+  Delete,
+  Get,
 } from '@nestjs/common';
 import { GameService } from './game.service';
 import { CreateGameProgramDto } from './dtos/create-game-program.dto';
 import {
   AssignPrizeToStampDto,
   CreateProgramPrizeDto,
+  ListProgramDto,
   UpdateGameProgramDto,
   UpdateProgramPrizeDto,
 } from './dtos';
@@ -26,6 +29,20 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @ApiBearerAuth()
 export class GameController {
   constructor(private readonly gameService: GameService) {}
+
+  @Get('program')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async listProgram(@Body() data: ListProgramDto) {
+    const result = await this.gameService.listProgram(data);
+    return new ApiResult().success(result);
+  }
+
+  @Get('program/:id')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async listProgramDetail(@Param('id') id: string) {
+    const result = await this.gameService.programDetail(id);
+    return new ApiResult().success(result);
+  }
 
   @Post('program')
   @UsePipes(new ValidationPipe({ transform: true }))
@@ -58,6 +75,13 @@ export class GameController {
     @Param('id') id: string,
   ) {
     const result = await this.gameService.updateGamePrize(id, data);
+    return new ApiResult().success(result);
+  }
+
+  @Delete('prize/:id')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async deleteProduct(@Param('id') id: string) {
+    const result = await this.gameService.deletePrize(id);
     return new ApiResult().success(result);
   }
 

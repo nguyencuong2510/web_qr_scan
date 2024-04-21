@@ -1,5 +1,6 @@
 import { Entity, Column } from 'typeorm';
 import { BaseEntity } from '../../common/typeorm/base.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
 @Entity({ name: 'stamp_group' })
 export class StampGroup extends BaseEntity {
@@ -17,4 +18,13 @@ export class StampGroup extends BaseEntity {
 
   @Column({ nullable: false, type: 'varchar', name: 'prefix' })
   prefix: string;
+
+  @Column('text', {
+    array: true,
+    nullable: true,
+    name: 'active_serial_range',
+    default: [],
+  })
+  @ApiProperty()
+  activeSerialRange?: string[];
 }

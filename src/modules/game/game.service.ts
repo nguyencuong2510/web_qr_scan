@@ -6,11 +6,12 @@ import {
   Stamp,
   StampGroup,
 } from '../../database/models';
-import { Brackets, EntityManager, Repository } from 'typeorm';
+import { Brackets, EntityManager, IsNull, Repository } from 'typeorm';
 import {
   AssignPrizeToStampDto,
   CreateGameProgramDto,
   CreateProgramPrizeDto,
+  ListProgramDto,
   UpdateGameProgramDto,
   UpdateProgramPrizeDto,
 } from './dtos';
@@ -28,6 +29,45 @@ export class GameService {
     @InjectEntityManager()
     private readonly entityManager: EntityManager,
   ) {}
+
+  async listProgram(data: ListProgramDto) {
+    const { limit, page } = data;
+
+    const skip = (page - 1) * limit;
+
+    const [program, total] = await Promise.all([
+      this.gameProgramRepo.find({
+        take: limit,
+        skip,
+        order: { updatedAt: 'DESC' },
+      }),
+      this.gameProgramRepo.count({}),
+    ]);
+
+    return {
+      data: program.map((v) => ({
+        ...v,
+        isStop:
+          v.startTime >= new Date() && v.endTime <= new Date() ? false : true,
+      })),
+      total,
+    };
+  }
+
+  async programDetail(id: string) {
+    const details = await this.gameProgramRepo
+      .createQueryBuilder('gp')
+      .leftJoinAndMapMany(
+        'gp.gamePrize',
+        GamePrize,
+        'pri',
+        'pri.gameProgramId = gp.id',
+      )
+      .where('gp.id = :id', { id })
+      .getOne();
+
+    return details;
+  }
 
   async createGameProgram(data: CreateGameProgramDto) {
     return await this.gameProgramRepo.save(data);
@@ -52,7 +92,7 @@ export class GameService {
       this.gameProgramRepo.findOneBy({
         id: gameProgramId,
       }),
-      this.gamePrizeRepo.countBy({ gameProgramId }),
+      this.gamePrizeRepo.countBy({ gameProgramId, deletedAt: IsNull() }),
     ]);
 
     if (!existGameProgram) throw new ApiError('Game program does not exist');
@@ -68,6 +108,7 @@ export class GameService {
     if (data.gameProgramId && existPrize.gameProgramId !== data.gameProgramId) {
       const gamePrizes = await this.gamePrizeRepo.countBy({
         gameProgramId: data.gameProgramId,
+        deletedAt: IsNull(),
       });
 
       if (gamePrizes >= 6) throw new ApiError(`Program max prize is 6`);
@@ -80,6 +121,17 @@ export class GameService {
     });
   }
 
+  async deletePrize(id: string) {
+    const product = await this.gamePrizeRepo.findOneBy({ id });
+    if (!product) {
+      throw new ApiError('Product not found');
+    }
+    return await this.gamePrizeRepo.update(
+      { id: product.id },
+      { deletedAt: new Date() },
+    );
+  }
+
   async assignPrizeToStamp(prizeId: string, data: AssignPrizeToStampDto) {
     const { stampGroupId, from, to } = data;
 
@@ -88,7 +140,7 @@ export class GameService {
         transaction.findOneBy(StampGroup, {
           id: stampGroupId,
         }),
-        transaction.findOneBy(GamePrize, { id: prizeId }),
+        transaction.findOneBy(GamePrize, { id: prizeId, deletedAt: IsNull() }),
       ]);
 
       if (!existStampGrp) throw new ApiError('Stamp group not exist');

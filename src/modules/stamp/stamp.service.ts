@@ -43,7 +43,7 @@ export class StampService {
     return await this.entityManager.transaction(async (transaction) => {
       const existName = await transaction.findOneBy(StampGroup, {
         name,
-      } as StampGroup);
+      });
 
       if (existName) throw new ApiError('Stamp group name already exist');
 
@@ -94,6 +94,51 @@ export class StampService {
     await this.stampGroupRepo.update({ id }, { name });
 
     return true;
+  }
+
+  private async updateActiveRange(
+    stampGroup: StampGroup,
+    transaction: EntityManager,
+  ) {
+    const activeStamps = (await transaction.query(`
+    SELECT public_code as "publicCode"
+    FROM stamp
+    WHERE product_id IS NOT NULL
+    ORDER BY 
+    CAST(SUBSTRING(public_code FROM '[0-9]+') AS INTEGER);
+    `)) as Pick<Stamp, 'publicCode'>[];
+
+    const activeSerialRange = [];
+    let startRange = null;
+    let endRange = null;
+
+    for (const stamp of activeStamps) {
+      const code = stamp.publicCode;
+      const [prefix, number] = code.split('-');
+      const stampNumber = parseInt(number);
+      if (startRange === null) {
+        startRange = stampNumber;
+        endRange = stampNumber;
+      } else if (stampNumber === endRange + 1) {
+        endRange = stampNumber;
+      } else {
+        activeSerialRange.push(
+          `${prefix}-${startRange} -> ${prefix}-${endRange}`,
+        );
+        startRange = stampNumber;
+        endRange = stampNumber;
+      }
+    }
+    if (startRange !== null && endRange !== null) {
+      activeSerialRange.push(
+        `${stampGroup.prefix}-${startRange} -> ${stampGroup.prefix}-${endRange}`,
+      );
+    }
+    await transaction.update(
+      StampGroup,
+      { id: stampGroup.id },
+      { activeSerialRange },
+    );
   }
 
   async assignStampToProduct(data: AssignStampToProductDto) {
@@ -151,6 +196,7 @@ export class StampService {
       }
 
       await Promise.all(updatePromises);
+      await this.updateActiveRange(existStampGrp, transaction);
 
       return true;
     });
@@ -193,11 +239,34 @@ export class StampService {
         'prd',
         'prd.id = st.product_id',
       )
-      .getOne()) as Stamp & { product: Product };
+      .leftJoinAndMapOne(
+        'st.gameHistory',
+        GameHistory,
+        'gh',
+        'gh.stampId = st.id',
+      )
+      .leftJoinAndMapOne(
+        'st.customer',
+        Customer,
+        'cus',
+        'cus.id = gh.customerId',
+      )
+      .getOne()) as Stamp & {
+      product: Product;
+      gameHistory?: GameHistory;
+      customer?: Customer;
+    };
 
     if (!result) throw new ApiError('Stamp or product not exist');
 
-    return { code: result.publicCode, product: result.product };
+    return {
+      code: result.publicCode,
+      product: result.product,
+      isUsed: result.gameHistory ? true : false,
+      usedPhoneNumber: CommonService.maskPhoneNumber(
+        result?.customer?.phoneNumber || '',
+      ),
+    };
   }
 
   private async checkPrivateCode(privateCode: string) {
@@ -210,39 +279,56 @@ export class StampService {
         'prd',
         'prd.id = st.product_id',
       )
-      .getOne()) as Stamp & { product: Product };
+      .leftJoinAndMapOne(
+        'st.gameHistory',
+        GameHistory,
+        'gh',
+        'gh.stampId = st.id',
+      )
+      .leftJoinAndMapOne(
+        'st.customer',
+        Customer,
+        'cus',
+        'cus.id = gh.customerId',
+      )
+      .getOne()) as Stamp & {
+      product: Product;
+      gameHistory?: GameHistory;
+      customer?: Customer;
+    };
 
     if (!result) throw new ApiError('Stamp or product not exist');
 
-    const gameHistory = await this.gameHistoryRepo.findOneBy({
-      stampId: result.id,
-    });
-
-    return { gameHistory, stamp: result };
+    return {
+      gameHistory: result.gameHistory,
+      stamp: result,
+      customer: result.customer,
+      product: result.product,
+    };
   }
 
   async checkStampPrivateCode(code: string) {
-    const { gameHistory } = await this.checkPrivateCode(code);
+    const { gameHistory, customer, product } =
+      await this.checkPrivateCode(code);
 
-    if (!gameHistory) return true;
-
-    const customer = await this.customerRepo.findOneBy({
-      id: gameHistory.customerId,
-    });
-
-    const maskedPhone = CommonService.maskPhoneNumber(customer.phoneNumber);
-
-    return `This code has been used by ${maskedPhone}`;
+    return {
+      product,
+      isUsed: gameHistory ? true : false,
+      usedPhoneNumber: CommonService.maskPhoneNumber(
+        customer?.phoneNumber || '',
+      ),
+    };
   }
 
   async submitCustomerWithPrivateCode(data: SubmitPrivateCodeDto) {
     const { privateCode, name, phoneNumber, email, address, location } = data;
 
-    const { gameHistory, stamp } = await this.checkPrivateCode(privateCode);
+    const { gameHistory, stamp, customer } =
+      await this.checkPrivateCode(privateCode);
 
     if (gameHistory) throw new ApiError('This stamp already been used');
 
-    const existCustomer = await this.customerRepo.findOneBy({ phoneNumber });
+    const existCustomer = customer;
 
     const result = await this.entityManager.transaction(async (transaction) => {
       const prize = (await transaction
@@ -255,8 +341,6 @@ export class StampService {
           'gpr.id = gp.gameProgramId',
         )
         .getOne()) as GamePrize & { gameProgram: GameProgram };
-
-      if (!prize) throw new ApiError('This stamp is not assign to any prize');
 
       let customerData = existCustomer;
 
@@ -283,11 +367,11 @@ export class StampService {
 
       await transaction.save(GameHistory, {
         customerId: customerData.id,
-        gamePrizeId: prize.id,
+        gamePrizeId: prize?.id,
         stampId: stamp.id,
       } as GameHistory);
 
-      return prize ? prize.name : false;
+      return prize || { name: 'Chúc bạn may mắn lần sau' };
     });
 
     return result;
