@@ -1,5 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsInt, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { ApiError } from 'src/common/classes';
+
+export function validateTo(obj: { from: number; to: number }) {
+  const { from, to } = obj;
+
+  if (to < from) throw new ApiError('From must be greater than to');
+
+  return to;
+}
 
 export class CreateStampGroupDto {
   @ApiProperty()
@@ -16,11 +26,14 @@ export class CreateStampGroupDto {
   @IsNotEmpty()
   @IsNumber()
   @IsInt()
+  @Min(0)
   from: number;
 
   @ApiProperty()
   @IsNotEmpty()
   @IsNumber()
   @IsInt()
+  @Min(0)
+  @Transform(({ obj }) => validateTo(obj))
   to: number;
 }
