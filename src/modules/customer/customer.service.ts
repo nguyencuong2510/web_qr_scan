@@ -91,6 +91,7 @@ export class CustomerService {
     return {
       customer,
       history: history.map((v) => ({
+        id: v.id,
         name: v?.prize?.name || 'Chúc bạn may mắn lần sau',
         program: v?.program?.name || '',
         status: v.status,

@@ -15,6 +15,7 @@ import {
   AssignStampToProductDto,
   CreateStampGroupDto,
   ListStampGroupDto,
+  StampGroupDetailDto,
   SubmitPrivateCodeDto,
   UpdateStampGroupDto,
 } from './dtos';
@@ -375,5 +376,27 @@ export class StampService {
     });
 
     return result;
+  }
+
+  async getStampList(stampGroupId: number, data: StampGroupDetailDto) {
+    const { limit, page } = data;
+    const skip = (page - 1) * limit;
+
+    const group = await this.stampGroupRepo.findOneBy({ id: stampGroupId });
+    if (!group) throw new ApiError('Stamp group not found');
+
+    const stamps = (await this.stampRepo
+      .createQueryBuilder('st')
+      .select(`public_code as "publicCode", id`)
+      .where(`st.stamp_group_id = :stampGroupId `, { stampGroupId })
+      .orderBy(`CAST(SUBSTRING(st.public_code FROM '[0-9]+') AS INTEGER)`)
+      .take(limit)
+      .skip(skip)
+      .getRawMany()) as Pick<Stamp, 'publicCode' | 'id'>[];
+
+    return {
+      ...group,
+      stamps,
+    };
   }
 }
