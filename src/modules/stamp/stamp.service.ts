@@ -385,18 +385,24 @@ export class StampService {
     const group = await this.stampGroupRepo.findOneBy({ id: stampGroupId });
     if (!group) throw new ApiError('Stamp group not found');
 
-    const stamps = (await this.stampRepo
+    const stampQuery = this.stampRepo
       .createQueryBuilder('st')
       .select(`public_code as "publicCode", id`)
-      .where(`st.stamp_group_id = :stampGroupId `, { stampGroupId })
-      .orderBy(`CAST(SUBSTRING(st.public_code FROM '[0-9]+') AS INTEGER)`)
-      .take(limit)
-      .skip(skip)
-      .getRawMany()) as Pick<Stamp, 'publicCode' | 'id'>[];
+      .where(`st.stamp_group_id = :stampGroupId `, { stampGroupId });
+
+    const [stamps, total] = await Promise.all([
+      stampQuery
+        .orderBy(`CAST(SUBSTRING(st.public_code FROM '[0-9]+') AS INTEGER)`)
+        .take(limit)
+        .skip(skip)
+        .getRawMany(),
+      stampQuery.getCount(),
+    ]);
 
     return {
-      ...group,
-      stamps,
+      id: group.id,
+      name: group.name,
+      stamps: { data: stamps, total },
     };
   }
 }
