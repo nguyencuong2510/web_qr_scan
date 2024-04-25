@@ -22,15 +22,17 @@ export class MainService {
   ) {}
 
   async getMain() {
-    const noCustomers = await this.customerRepo.count();
-    const noStamps = await this.stampRepo.count();
-    const noStampGroups = await this.stampGroupRepo.count();
-
     const currentDate = new Date();
-    const activeProgram = await this.gameProgramRepo.countBy({
-      startTime: LessThanOrEqual(currentDate),
-      endTime: MoreThanOrEqual(currentDate),
-    });
+    const [noCustomers, noStamps, noStampGroups, activeProgram] =
+      await Promise.all([
+        this.customerRepo.count(),
+        this.stampRepo.count(),
+        this.stampGroupRepo.count(),
+        this.gameProgramRepo.countBy({
+          startTime: LessThanOrEqual(currentDate),
+          endTime: MoreThanOrEqual(currentDate),
+        }),
+      ]);
 
     return {
       numberOfStampGroup: noStampGroups,

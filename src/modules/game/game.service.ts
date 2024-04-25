@@ -171,14 +171,10 @@ export class GameService {
         .set({ gamePrizeId: prizeId } as Stamp)
         .where({ stampGroupId: existStampGrp.id });
 
-      let additionalConditions = ``;
+      let pubCodeQuery = [];
 
       for (let i = Number(from); i <= Number(to); i++) {
-        const codeQuery = `public_code = '${existStampGrp.prefix}-${i}' `;
-
-        additionalConditions += additionalConditions.length
-          ? ` or ${codeQuery}`
-          : codeQuery;
+        pubCodeQuery.push(i);
         batchCount += 1;
 
         // batch update to improve performance
@@ -187,19 +183,27 @@ export class GameService {
             builder
               .clone()
               .andWhere(`game_prize_id is null`)
-              .andWhere(new Brackets((qb) => qb.andWhere(additionalConditions)))
+              .andWhere(
+                new Brackets((qb) =>
+                  qb.andWhere(`public_code In(:...ids)`, { ids: pubCodeQuery }),
+                ),
+              )
               .getCount(),
           );
 
           updatePromises.push(
             defaultQuery
               .clone()
-              .andWhere(new Brackets((qb) => qb.andWhere(additionalConditions)))
+              .andWhere(
+                new Brackets((qb) =>
+                  qb.andWhere(`public_code In(:...ids)`, { ids: pubCodeQuery }),
+                ),
+              )
               .execute(),
           );
 
           batchCount = 0;
-          additionalConditions = ``;
+          pubCodeQuery = [];
         }
       }
 
