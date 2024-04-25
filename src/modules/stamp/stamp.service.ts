@@ -103,7 +103,7 @@ export class StampService {
     const activeStamps = (await transaction.query(`
     SELECT public_code as "publicCode"
     FROM stamp
-    WHERE product_id IS NOT NULL
+    WHERE product_id IS NOT NULL and where stamp_group_id = '${stampGroup.id}'
     ORDER BY public_code ASC;
     `)) as Pick<Stamp, 'publicCode'>[];
 
