@@ -17,7 +17,6 @@ import {
   AssignStampToProductDto,
   CreateStampGroupDto,
   ListStampGroupDto,
-  StampGroupDetailDto,
   SubmitPrivateCodeDto,
   UpdateStampGroupDto,
 } from './dtos';
@@ -63,11 +62,8 @@ export class StampController {
 
   @Get('group/:id')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async groupDetail(
-    @Query() data: StampGroupDetailDto,
-    @Param('id') id: number,
-  ) {
-    const result = await this.stampService.getStampList(id, data);
+  async groupDetail(@Param('id') id: number) {
+    const result = await this.stampService.getStampList(id);
     return new ApiResult().success(result);
   }
 }

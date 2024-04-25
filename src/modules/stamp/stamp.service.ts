@@ -15,7 +15,6 @@ import {
   AssignStampToProductDto,
   CreateStampGroupDto,
   ListStampGroupDto,
-  StampGroupDetailDto,
   SubmitPrivateCodeDto,
   UpdateStampGroupDto,
 } from './dtos';
@@ -378,10 +377,7 @@ export class StampService {
     return result;
   }
 
-  async getStampList(stampGroupId: number, data: StampGroupDetailDto) {
-    const { limit, page } = data;
-    const skip = (page - 1) * limit;
-
+  async getStampList(stampGroupId: number) {
     const group = await this.stampGroupRepo.findOneBy({ id: stampGroupId });
     if (!group) throw new ApiError('Stamp group not found');
 
@@ -393,8 +389,6 @@ export class StampService {
     const [stamps, total] = await Promise.all([
       stampQuery
         .orderBy(`CAST(SUBSTRING(st.public_code FROM '[0-9]+') AS INTEGER)`)
-        .take(limit)
-        .skip(skip)
         .getRawMany(),
       stampQuery.getCount(),
     ]);

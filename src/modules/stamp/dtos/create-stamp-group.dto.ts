@@ -8,6 +8,9 @@ export function validateTo(obj: { from: number; to: number }) {
 
   if (to < from) throw new ApiError('From must be greater than to');
 
+  if (to - from > 100000)
+    throw new ApiError('Cant create group with more than 100,000 stamp');
+
   return to;
 }
 
