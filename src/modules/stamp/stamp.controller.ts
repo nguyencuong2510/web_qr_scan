@@ -73,10 +73,16 @@ export class StampController {
 export class PublicStampController {
   constructor(private readonly stampService: StampService) {}
 
-  @Get('public/:publicCode')
+  @Get(':groupId/public/:publicCode')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async getProductByCode(@Param('publicCode') code: string) {
-    const result = await this.stampService.getProductByCode(code);
+  async getProductByCode(
+    @Param('groupId') groupId: number,
+    @Param('publicCode') publicCode: string,
+  ) {
+    const result = await this.stampService.getProductByCode(
+      groupId,
+      publicCode,
+    );
     return new ApiResult().success(result);
   }
 

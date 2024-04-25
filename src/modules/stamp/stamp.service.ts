@@ -51,7 +51,7 @@ export class StampService {
       const stampGroup = await transaction.save(StampGroup, {
         name,
         amountStamp,
-        serialRange: `${prefix}-${from} -> ${prefix}-${to}`,
+        serialRange: `KL-${from} -> KL-${to}`,
         prefix,
       } as StampGroup);
 
@@ -61,7 +61,7 @@ export class StampService {
 
       for (let i = from; i <= to; i++) {
         createStampArr.push({
-          publicCode: `${prefix}-${i}`,
+          publicCode: i,
           stampGroupId: stampGroup.id,
         } as Stamp);
 
@@ -104,18 +104,16 @@ export class StampService {
     SELECT public_code as "publicCode"
     FROM stamp
     WHERE product_id IS NOT NULL
-    ORDER BY 
-    CAST(SUBSTRING(public_code FROM '[0-9]+') AS INTEGER);
+    ORDER BY public_code ASC;
     `)) as Pick<Stamp, 'publicCode'>[];
 
     const activeSerialRange = [];
     let startRange = null;
     let endRange = null;
+    const prefix = 'KL';
 
     for (const stamp of activeStamps) {
-      const code = stamp.publicCode;
-      const [prefix, number] = code.split('-');
-      const stampNumber = parseInt(number);
+      const stampNumber = Number(stamp.publicCode);
       if (startRange === null) {
         startRange = stampNumber;
         endRange = stampNumber;
@@ -131,7 +129,7 @@ export class StampService {
     }
     if (startRange !== null && endRange !== null) {
       activeSerialRange.push(
-        `${stampGroup.prefix}-${startRange} -> ${stampGroup.prefix}-${endRange}`,
+        `${prefix}-${startRange} -> ${prefix}-${endRange}`,
       );
     }
     await transaction.update(
@@ -171,14 +169,10 @@ export class StampService {
         .set({ productId })
         .where({ stampGroupId: existStampGrp.id });
 
-      let additionalConditions = ``;
+      let publicCodeQuery = [];
 
       for (let i = Number(from); i <= Number(to); i++) {
-        const codeQuery = `public_code = '${existStampGrp.prefix}-${i}' `;
-
-        additionalConditions += additionalConditions.length
-          ? ` or ${codeQuery}`
-          : codeQuery;
+        publicCodeQuery.push(i);
         batchCount += 1;
 
         // batch update to improve performance
@@ -186,12 +180,18 @@ export class StampService {
           updatePromises.push(
             defaultQuery
               .clone()
-              .andWhere(new Brackets((qb) => qb.andWhere(additionalConditions)))
+              .andWhere(
+                new Brackets((qb) =>
+                  qb.andWhere(`public_code In(:...ids)`, {
+                    ids: publicCodeQuery,
+                  }),
+                ),
+              )
               .execute(),
           );
 
           batchCount = 0;
-          additionalConditions = ``;
+          publicCodeQuery = [];
         }
       }
 
@@ -229,10 +229,13 @@ export class StampService {
     };
   }
 
-  async getProductByCode(code: string) {
+  async getProductByCode(groupId: number, publicCode: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, code] = publicCode.split('-');
+
     const result = (await this.stampRepo
       .createQueryBuilder('st')
-      .where({ publicCode: code } as Stamp)
+      .where({ publicCode: Number(code), stampGroupId: groupId })
       .innerJoinAndMapOne(
         'st.product',
         Product,
@@ -387,9 +390,7 @@ export class StampService {
       .where(`st.stamp_group_id = :stampGroupId `, { stampGroupId });
 
     const [stamps, total] = await Promise.all([
-      stampQuery
-        .orderBy(`CAST(SUBSTRING(st.public_code FROM '[0-9]+') AS INTEGER)`)
-        .getRawMany(),
+      stampQuery.orderBy(`st.public_code`, 'ASC').getRawMany(),
       stampQuery.getCount(),
     ]);
 

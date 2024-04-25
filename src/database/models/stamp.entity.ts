@@ -29,8 +29,8 @@ export class Stamp {
   })
   updatedAt: Date;
 
-  @Column({ length: 255, nullable: false, unique: true, name: 'public_code' })
-  publicCode: string;
+  @Column({ nullable: false, name: 'public_code' })
+  publicCode: number;
 
   @Column({ nullable: false, type: 'int4', name: 'stamp_group_id' })
   stampGroupId: number;
