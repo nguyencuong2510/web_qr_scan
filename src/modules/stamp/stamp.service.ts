@@ -386,7 +386,7 @@ export class StampService {
 
     const stampQuery = this.stampRepo
       .createQueryBuilder('st')
-      .select(`public_code as "publicCode", id`)
+      .select(`CONCAT('KL-',"public_code") as publicCode, id`)
       .where(`st.stamp_group_id = :stampGroupId `, { stampGroupId });
 
     const [stamps, total] = await Promise.all([
