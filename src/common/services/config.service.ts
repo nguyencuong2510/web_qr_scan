@@ -18,6 +18,7 @@ export class AppConfig {
   env: IEnv;
   jwtSecret: string;
   jwtExpireTime: string;
+  corsAllowList: string[];
 }
 
 export class EnvConfig {
@@ -59,6 +60,10 @@ export class EnvConfig {
   @Expose()
   @IsNotEmpty()
   JWT_EXPIRE_TIME: string;
+
+  @Expose()
+  @IsNotEmpty()
+  CORS_ALLOW_LIST: string;
 }
 
 export default registerAsWithValidation(
@@ -75,5 +80,6 @@ export default registerAsWithValidation(
     env: config.APP_ENV,
     jwtExpireTime: config.JWT_EXPIRE_TIME,
     jwtSecret: config.JWT_SECRET,
+    corsAllowList: config.CORS_ALLOW_LIST.split(','),
   }),
 );

@@ -26,7 +26,7 @@ export class ProductsService {
         where: query,
         take: limit,
         skip,
-        order: { updatedAt: 'DESC' },
+        order: { deletedAt: 'DESC', updatedAt: 'DESC' },
       }),
       this.productRepo.count({
         where: query,

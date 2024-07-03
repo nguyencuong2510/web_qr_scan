@@ -66,9 +66,11 @@ export class CustomerService {
 
     const customer = await this.customerRepo.findOneBy({ id: customerId });
 
-    const history = (await this.gameHistoryRepo
+    const historyQuery = this.gameHistoryRepo
       .createQueryBuilder('gh')
-      .where({ customerId } as GameHistory)
+      .where({ customerId } as GameHistory);
+
+    const history = (await historyQuery
       .leftJoinAndMapOne(
         'gh.prize',
         GamePrize,
@@ -88,18 +90,23 @@ export class CustomerService {
       prize?: GamePrize;
     })[];
 
+    const total = await historyQuery.getCount();
+
     return {
       customer,
-      history: history.map((v) => ({
-        id: v.id,
-        name: v?.prize?.name || 'Chúc bạn may mắn lần sau',
-        program: v?.program?.name || '',
-        status: v.status,
-        isPlayed: v.isPlayed,
-        timeReceivedPrize: v.timeReceivedPrize,
-        updatedAt: v.updatedAt,
-        createdAt: v.createdAt,
-      })),
+      history: {
+        data: history.map((v) => ({
+          id: v.id,
+          name: v?.prize?.name || 'Chúc bạn may mắn lần sau',
+          program: v?.program?.name || '',
+          status: v.status,
+          isPlayed: v.isPlayed,
+          timeReceivedPrize: v.timeReceivedPrize,
+          updatedAt: v.updatedAt,
+          createdAt: v.createdAt,
+        })),
+        total,
+      },
     };
   }
 }

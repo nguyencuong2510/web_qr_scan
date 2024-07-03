@@ -103,7 +103,7 @@ export class StampService {
     const activeStamps = (await transaction.query(`
     SELECT public_code as "publicCode"
     FROM stamp
-    WHERE product_id IS NOT NULL and where stamp_group_id = '${stampGroup.id}'
+    WHERE product_id IS NOT NULL and stamp_group_id = '${stampGroup.id}'
     ORDER BY public_code ASC;
     `)) as Pick<Stamp, 'publicCode'>[];
 
@@ -139,6 +139,17 @@ export class StampService {
     );
   }
 
+  private extractRange(range: string) {
+    const parts = range.split('->').map((part) => part.trim());
+    const prefixAndFrom = parts[0].split('-');
+    const prefixAndTo = parts[1].split('-');
+
+    const groupFrom = Number(prefixAndFrom[1]);
+    const groupTo = Number(prefixAndTo[1]);
+
+    return { groupFrom, groupTo };
+  }
+
   async assignStampToProduct(data: AssignStampToProductDto) {
     const { stampGroupId, productId, from, to } = data;
 
@@ -154,6 +165,16 @@ export class StampService {
 
       if (!existStampGrp) throw new ApiError('Stamp group not exist');
       if (!existProduct) throw new ApiError('Product not exist');
+
+      const { groupFrom, groupTo } = this.extractRange(
+        existStampGrp.serialRange,
+      );
+
+      if (groupFrom > Number(from) || groupTo < Number(to)) {
+        throw new ApiError(
+          `Range should be between ${groupFrom} -> ${groupTo}`,
+        );
+      }
 
       await transaction.update(StampGroup, { id: existStampGrp.id }, {
         activeStamp: Number(existStampGrp.activeStamp) + activeStamp,
