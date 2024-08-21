@@ -25,6 +25,6 @@ async function bootstrap() {
     origin: cfg.corsAllowList,
   });
 
-  await app.listen(3000, '0.0.0.0');
+  await app.listen(cfg.appPort || 3000, '0.0.0.0');
 }
 bootstrap();

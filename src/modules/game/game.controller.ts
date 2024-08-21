@@ -103,13 +103,6 @@ export class GameController {
     return new ApiResult().success(result);
   }
 
-  @Get('play/:privateCode')
-  @UsePipes(new ValidationPipe({ transform: true }))
-  async play(@Param('privateCode') privateCode: string) {
-    const result = await this.gameService.playGame(privateCode);
-    return new ApiResult().success(result);
-  }
-
   @Put('receive-status/:gameHistoryId')
   @UsePipes(new ValidationPipe({ transform: true }))
   async updateReceiveStatus(

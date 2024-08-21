@@ -222,18 +222,6 @@ export class GameService {
     });
   }
 
-  async playGame(stampId: string) {
-    const gameHistory = await this.gameHistoryRepo.findOneBy({ stampId });
-    if (!gameHistory) throw new ApiError('Invalid private code');
-
-    await this.gameHistoryRepo.update(
-      { id: gameHistory.id },
-      { isPlayed: true },
-    );
-
-    return true;
-  }
-
   async updateReceiveStatus(id: string, data: UpdateReceiveStatusDto) {
     const gameHistory = await this.gameHistoryRepo.findOneBy({ id });
     if (!gameHistory) throw new ApiError('Game history not found');

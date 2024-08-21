@@ -19,6 +19,7 @@ export class AppConfig {
   jwtSecret: string;
   jwtExpireTime: string;
   corsAllowList: string[];
+  appPort: number;
 }
 
 export class EnvConfig {
@@ -64,6 +65,12 @@ export class EnvConfig {
   @Expose()
   @IsNotEmpty()
   CORS_ALLOW_LIST: string;
+
+  @Expose()
+  @IsNotEmpty()
+  @Transform(({ value }) => Number(value))
+  @IsNumber()
+  PORT: number;
 }
 
 export default registerAsWithValidation(
@@ -81,5 +88,6 @@ export default registerAsWithValidation(
     jwtExpireTime: config.JWT_EXPIRE_TIME,
     jwtSecret: config.JWT_SECRET,
     corsAllowList: config.CORS_ALLOW_LIST.split(','),
+    appPort: config.PORT,
   }),
 );

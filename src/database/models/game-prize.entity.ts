@@ -48,5 +48,5 @@ export class GamePrize {
     name: 'deleted_at',
   })
   @ApiProperty()
-  deletedAt: Date;
+  deletedAt?: Date;
 }

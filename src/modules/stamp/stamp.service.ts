@@ -347,12 +347,30 @@ export class StampService {
   async submitCustomerWithPrivateCode(data: SubmitPrivateCodeDto) {
     const { privateCode, name, phoneNumber, email, address, location } = data;
 
-    const { gameHistory, stamp, customer } =
-      await this.checkPrivateCode(privateCode);
+    const { gameHistory, stamp } = await this.checkPrivateCode(privateCode);
 
-    if (gameHistory) throw new ApiError('This stamp already been used');
+    if (gameHistory) {
+      if (gameHistory.isPlayed) throw new ApiError('Tem đã được sử dụng');
 
-    const existCustomer = customer;
+      const prize = await this.entityManager.findOneBy(GamePrize, {
+        id: gameHistory.gamePrizeId,
+      });
+
+      if (!prize)
+        throw new ApiError('Tem đã hết hạn hoặc chương trình đã kết thúc');
+
+      const prizePool = await this.entityManager
+        .createQueryBuilder(GamePrize, 'gp')
+        .where({
+          gameProgramId: prize.gameProgramId,
+          deletedAt: IsNull(),
+        })
+        .getMany();
+
+      return { prize, prizePool };
+    }
+
+    const existCustomer = await this.customerRepo.findOneBy({ phoneNumber });
 
     const result = await this.entityManager.transaction(async (transaction) => {
       const prize = (await transaction
@@ -365,6 +383,18 @@ export class StampService {
           'gpr.id = gp.gameProgramId',
         )
         .getOne()) as GamePrize & { gameProgram: GameProgram };
+
+      if (!prize) {
+        throw new ApiError('Tem đã hết hạn hoặc chương trình đã kết thúc');
+      }
+
+      const prizePool = await transaction
+        .createQueryBuilder(GamePrize, 'gp')
+        .where({
+          gameProgramId: prize.gameProgramId,
+          deletedAt: IsNull(),
+        })
+        .getMany();
 
       let customerData = existCustomer;
 
@@ -395,7 +425,7 @@ export class StampService {
         stampId: stamp.id,
       } as GameHistory);
 
-      return prize || { name: 'Chúc bạn may mắn lần sau' };
+      return { prize, prizePool };
     });
 
     return result;
@@ -420,5 +450,20 @@ export class StampService {
       name: group.name,
       stamps: { data: stamps, total },
     };
+  }
+
+  async playGame(stampId: string) {
+    const gameHistory = await this.gameHistoryRepo.findOneBy({
+      stampId,
+      isPlayed: false,
+    });
+    if (!gameHistory) throw new ApiError('Invalid private code');
+
+    await this.gameHistoryRepo.update(
+      { id: gameHistory.id },
+      { isPlayed: true },
+    );
+
+    return true;
   }
 }

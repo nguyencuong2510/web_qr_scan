@@ -99,4 +99,11 @@ export class PublicStampController {
     const result = await this.stampService.submitCustomerWithPrivateCode(body);
     return new ApiResult().success(result);
   }
+
+  @Put('play/:privateCode')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async play(@Param('privateCode') privateCode: string) {
+    const result = await this.stampService.playGame(privateCode);
+    return new ApiResult().success(result);
+  }
 }
